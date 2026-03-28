@@ -2,6 +2,10 @@ from openai import OpenAI
 from dotenv import load_dotenv
 import json
 from tools import check_order_status, escalate_to_human
+import sys
+sys.path.append('..')
+from search import search
+
 
 load_dotenv()
 client = OpenAI()
@@ -41,13 +45,32 @@ TOOLS = [
                 "required": ["reason"]
             }
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "search_policy",
+            "description": "Search Zomato policy documents to answer customer questions about refunds, delivery, and payments",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "The customer's question to search for"
+                    }
+                },
+                "required": ["query"]
+            }
+        }
     }
+
 ]
 
 # Step 2 — Map tool names to actual Python functions
 TOOL_MAP = {
     "check_order_status": check_order_status,
-    "escalate_to_human": escalate_to_human
+    "escalate_to_human": escalate_to_human,
+    "search_policy": lambda query: "\n\n".join(search(query))
 }
 
 def run_agent(user_message: str) -> str:
@@ -95,4 +118,6 @@ Always be helpful and precise."""},
 
 # Test it
 if __name__ == "__main__":
-    print(run_agent("Check order #11111 and if it's cancelled, escalate to a human"))
+    print(run_agent("What is the refund policy for cancelled orders?"))
+    print("---")
+    print(run_agent("Check my order #67890"))

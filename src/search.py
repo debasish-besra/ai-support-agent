@@ -8,7 +8,7 @@ load_dotenv()
 
 client = OpenAI()
 co = cohere.ClientV2(os.getenv("COHERE_API_KEY"))
-chroma = chromadb.PersistentClient(path="./chroma_db")
+chroma = chromadb.PersistentClient(path="../chroma_db")
 collection = chroma.get_or_create_collection(name="support_docs")
 
 def search(query, n_retrieve=3, n_final=2, threshold=0.3):
@@ -42,8 +42,9 @@ def search(query, n_retrieve=3, n_final=2, threshold=0.3):
     return filtered
 
 # Test
-question = "Can I get a refund if my order was cancelled?"
-chunks = search(question)
-print(f"Chunks returned: {len(chunks)}")
-for chunk in chunks:
-    print(f"\n{chunk[:80]}...")
+if __name__ == "__main__":
+    question = "Can I get a refund if my order was cancelled?"
+    chunks = search(question)
+    print(f"Chunks returned: {len(chunks)}")
+    for chunk in chunks:
+        print(f"\n{chunk[:80]}...")
