@@ -1,0 +1,14 @@
+Zomato Refund Policy:
+Orders cancelled within 5 minutes are eligible for full refund.
+Orders cancelled after 5 minutes but before dispatch are eligible for 50% refund.
+Orders cancelled after dispatch are not eligible for refund.
+
+Zomato Delivery Policy:
+Standard delivery takes 30-45 minutes.
+Express delivery takes 15-20 minutes and costs 30 rupees extra.
+Free delivery on orders above 299 rupees.
+
+Zomato Payment Policy:
+We accept UPI, credit cards, debit cards, and Zomato credits.
+Cash on delivery is available in select cities.
+Zomato credits never expire.
