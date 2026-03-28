@@ -14,8 +14,11 @@ co = cohere.ClientV2(os.getenv("COHERE_API_KEY"))
 chroma = chromadb.PersistentClient(path="./chroma_db")
 collection = chroma.get_or_create_collection(name="support_docs")
 
+conversations = {}
+
 class QuestionRequest(BaseModel):
     question: str
+    session_id: str
 
 def search(query, n_retrieve=3, n_final=2, threshold=0.3):
     response = client.embeddings.create(
@@ -50,32 +53,35 @@ def root():
 
 @app.post("/ask")
 def ask(request: QuestionRequest):
+    if request.session_id not in conversations:
+        conversations[request.session_id] = [
+            {"role": "system", "content": """You are a Zomato customer support agent.
+Answer using ONLY the information provided to you.
+If the answer is not available, say 'I don't have that information.'"""}
+        ]
+
     chunks = search(request.question)
+    context = "\n\n".join(chunks) if chunks else ""
 
-    if not chunks:
-        return {
-            "question": request.question,
-            "answer": "I don't have information about that.",
-            "sources": []
-        }
-
-    context = "\n\n".join(chunks)
+    user_message = f"Context:\n{context}\n\nQuestion: {request.question}" if context else request.question
+    conversations[request.session_id].append(
+        {"role": "user", "content": user_message}
+    )
 
     response = client.chat.completions.create(
         model="gpt-4o-mini",
-        messages=[
-            {"role": "system", "content": f"""You are a Zomato customer support agent.
-Answer using ONLY the information below.
-If the answer is not in the information, say 'I don't have that information.'
+        messages=conversations[request.session_id]
+    )
 
-INFORMATION:
-{context}"""},
-            {"role": "user", "content": request.question}
-        ]
+    answer = response.choices[0].message.content
+
+    conversations[request.session_id].append(
+        {"role": "assistant", "content": answer}
     )
 
     return {
+        "session_id": request.session_id,
         "question": request.question,
-        "answer": response.choices[0].message.content,
+        "answer": answer,
         "sources": chunks
     }
