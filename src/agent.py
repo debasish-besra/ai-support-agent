@@ -58,49 +58,41 @@ Always be helpful and precise."""},
         {"role": "user", "content": user_message}
     ]
 
-    # Step 3 — First LLM call: should it use a tool or answer directly?
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=messages,
-        tools=TOOLS
-    )
+    # Keep looping until LLM stops calling tools
+    while True:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=messages,
+            tools=TOOLS
+        )
 
-    message = response.choices[0].message
+        message = response.choices[0].message
 
-    # Step 4 — Did the LLM decide to use a tool?
-    if message.tool_calls:
+        # No tool call — LLM is done, return final answer
+        if not message.tool_calls:
+            return message.content
+
+        # Tool call requested — run it
         tool_call = message.tool_calls[0]
         tool_name = tool_call.function.name
         tool_args = json.loads(tool_call.function.arguments)
 
         print(f"Agent using tool: {tool_name} with args: {tool_args}")
 
-        # Step 5 — Actually run the tool
         tool_result = TOOL_MAP[tool_name](**tool_args)
 
-        # Step 6 — Give the result back to the LLM
+        print(f"Tool result: {tool_result}")
+
+        # Add tool call + result back into conversation
         messages.append(message)
         messages.append({
             "role": "tool",
             "tool_call_id": tool_call.id,
             "content": tool_result
         })
-
-        # Step 7 — Second LLM call: now generate final answer
-        final_response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=messages,
-            tools=TOOLS
-        )
-        return final_response.choices[0].message.content
-
-    # No tool needed — LLM answered directly
-    return message.content
+        # Loop continues — LLM decides next step
 
 
 # Test it
 if __name__ == "__main__":
-    print(run_agent("What is the status of my order #67890?"))
-    print("---")
-    # Edit the test at the bottom of agent.py to this:
-    print(run_agent("I have been waiting 3 hours and nobody is helping me, I want to speak to a manager NOW"))
+    print(run_agent("Check order #11111 and if it's cancelled, escalate to a human"))
